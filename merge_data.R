@@ -13,6 +13,7 @@ readsheet <- function(i, j) {
   temp <- temp[,c(2,3,4,5,8,15,16,22)]
   temp$Category <- as.character(temp$Category)
   temp <- subset(temp, Category == "LT Filing")
+  temp$month = i
   return(temp)
 }
 
