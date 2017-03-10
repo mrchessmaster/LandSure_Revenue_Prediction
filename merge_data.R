@@ -12,10 +12,7 @@ readsheet <- function(i, j) {
   temp <- read_excel(paste0(i, ".xlsx"), sheet = j)
   temp <- temp[,c(2,3,4,5,8,15,16,22)]
   temp$Category <- as.character(temp$Category)
-  if ("LT Filing" %in% temp$Category) {
-    temp <- subset(temp, Category == "LT Filing")
-    temp$month = i
-  }
+  temp <- subset(temp, Category == "LT Filing")
   return(temp)
 }
 
@@ -31,11 +28,12 @@ for (i in c("04-14","05-14", "06-14", "07-14", "08-14", "09-14", "10-14", "11-14
   
   # WHY IS THE DATA SO TERRIBLE????
   # 03-15 has bad sheet 4
+  # 06-15 has bad sheet 4
   # 08-15 has no sheet 4
   # 10-15 has no sheet 4
   
   if (i %in% c("04-14","05-14", "06-14", "07-14", "08-14", "09-14", "10-14", "11-14", "12-14", 
-               "01-15", "02-15", "04-15", "05-15", "06-15", "07-15", "09-15", "11-15", "12-15")) {
+               "01-15", "02-15", "04-15", "05-15", "07-15", "09-15", "11-15", "12-15")) {
     allData <- rbind(allData, readsheet(i, 4))
     print(paste(paste("ran",i), "4"))
     
