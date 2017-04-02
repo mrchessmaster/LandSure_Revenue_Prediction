@@ -1,0 +1,254 @@
+---
+title: "STAT 306 Project"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+# Abstract:
+
+We suspected the number of transactions are correlated with the market of ??
+
+# Description of Data
+
+For this case report, data are collected for a technology based monopoly, LandSure, located in downtown, Vancouver. The company sought out an accurate prediction model for their future transaction quantities. We will discover which external variables will support the best prediction.
+LandSure provided data on their past 34 months of transactions. The number of transactions per month is the response variable in the units of 1000s. The sample size n = 34.
+To develop the model, secondary research was conducted from websites of Bank of Canada, BC Statistics, BC Housing and MLS data. From these sources, variables obtained are number of residential sales (including 3 types of residence homes), average price of homes, HPI, number of building permits, 1-year and 5-year mortgage rates, 5-year term interest rate and GIC. Each was collected for each month starting from April 2014 to January 2017.
+  
+CREATE AN IMAGE OF THE DATA TABLE HERE
+  
+
+```{r}
+setwd("~/Desktop/STAT 306/proj")
+LSdata <- read.csv("../proj/Data1.csv", header = T)
+dim (LSdata)
+
+#find the correlation with all quantitative variables
+b <- cbind(LSdata[,2:9], LSdata[,12:18])
+#cor(b)
+
+attach(LSdata)
+#summary(LSdata[,2:17])
+```
+
+Based on the correlation matrix,  we know that some of the variables are highly correlated with each other, and some are a linear conmbination of others. So we only select a few variable to plot against.
+
+The corrlation matrix shows a high correlation of apart with num.sold, detached with num.sold, tHouse with num.sold, apart with detach, tHouse with detach, HPI with ave.pri, int.rate with ave.pri, int.rate with HPI, int.rate with X5yr.mortg. This shows that likely, at most 1 of the pair will be used for the best predicting model. 
+
+
+NEED TO LABLE THE GRAPHS
+
+
+```{r}
+
+par(mfrow=c(3,4)) 
+
+#Linear Relationships:
+plot(num.sold, num.trans)
+plot(apart, num.trans)
+plot(ave.pri, num.trans)
+plot(tot.perm, num.trans)
+plot(factor(int.rate), num.trans)
+plot(primeTime, num.trans)
+plot(season, num.trans)
+
+#Possible correlation between explanatory vairables:
+plot(primeTime, tot.perm)
+plot(factor(int.rate), ave.pri)
+
+#based on time sequence:
+plot(timeNumOrder, num.trans)
+plot(timeNumOrder, ave.pri)
+plot(timeNumOrder, tot.perm)
+
+```
+
+There is a monotonically increasing relation of num.trans to num.sold, apart, tHouse, tot.perm. There is a very weak positive linear relation of num.trans with detach and new.homes. Furthermore, the relation of num.trans to ave.pri and HPI is a positive near sinusoidal relation. However, as the relation does not perfectly resemble a sinusoidal function, transforming the variable in many ways did not help with increasing the correlation between HPI and num.trans. The box plots of season and primeTime show that there is a clear difference between a group of spring and winter months versus summer and fall months. The primeTime is also recognized to be between May and October. X5yr.mortg and X1yr.mortg does not show a relationship with num.trans. int.rate shows a weak negative relationship with num.trans. 
+The plots together show that detach, new.homes, X5yr.mortg, X1yr.mortg and int.rate will most likely not be used in the prediction model. The box plots show that the primeTime and season have a significant impact on the num.trans.
+As well, the summary statistics indicate that many variables should be linearly transformed to have the a beta range between 0.1 and 100 .
+
+```{r}
+#Data Transformation:
+num.trans = num.trans/1000
+num.sold = num.sold/1000
+ave.pri = ave.pri/100000
+tot.perm = tot.perm/100000
+apart = apart/1000
+
+```
+
+We next fit a multiple regression model with all neccesary explanatory variables. Residual plots show heteroscedasticity when the response variable is logged or not. The adj.r.squared is 0.8134 and 0.7693 respectively.
+
+```{r}
+#Excluded tHouse because num.sold = detached + apart + tHouse
+
+fit1 <- lm(num.trans ~ detached + apart + num.sold + ave.pri + monthNum + ave.pri + HPI + tot.perm + season + primeTime + newHomes + X5yr.mortg + X1yr.mortg + int.rate + GIC + timeNumOrder, data = LSdata)
+sum1 <- summary(fit1)
+sum1
+
+```
+
+This is not the best fit but it gives the s...... gives what?
+
+We also fit a multiple regression model with explanatory variables that has a relative higher correlation with num.trans (> 0.5). Also, since HPI and ave.pri has a high correlation, we only choose one of them; we also excluded timeNumOrder.
+
+```{r}
+
+fit2 <- lm(num.trans ~ primeTime + season + monthNum + int.rate + ave.pri + tot.perm + apart)
+sum2 <- summary(fit2)
+sum2
+
+par(mfrow=c(2,2))
+residfit2 <- resid(fit2)
+predfit2 <- predict(fit2)
+sigmaFit2 <- sum2$sigma
+
+plot(predfit2, residfit2)
+abline(h=2*sigmaFit2, col = "2"); abline(h=-2*sigmaFit2, col = "2"); abline(h=0)
+plot(ave.pri, residfit2)
+abline(h=2*sigmaFit2, col = "2"); abline(h=-2*sigmaFit2, col = "2"); abline(h=0)
+plot(tot.perm, residfit2)
+abline(h=2*sigmaFit2, col = "2"); abline(h=-2*sigmaFit2, col = "2"); abline(h=0)
+plot(apart, residfit2)
+abline(h=2*sigmaFit2, col = "2"); abline(h=-2*sigmaFit2, col = "2"); abline(h=0)
+
+par(mfrow=c(2,2))
+
+#insert more plots here?
+qqnorm(residfit2)
+
+```
+
+Residual plots now show there is homoscedasticity, with a slightly quadratic function. The adj.r.squared is ???
+and ??? for logged and not logged response variable respectively. The residuals of the fit plotted against each of the explanatory variables show a patternless plot. 
+
+The multiple regression is rerun setting base season as Spring, Summer and Winter. All give the same adj.r.squared and very similar betas with same signs.
+
+modellSally is logged... why are int.rate and monthnum not included?
+
+```{r}
+modelSally <- lm(log(num.trans) ~ primeTime + season + ave.pri + tot.perm + apart)
+summS <- summary(modelSally)
+summS
+
+residSally <- resid(modelSally)
+predSally <- predict(modelSally)
+sigmaS <- summS$sigma
+
+par(mfrow=c(2,2))
+
+qqnorm(residSally)
+plot(predSally, residSally)
+abline(h=0)
+plot(ave.pri, residSally)
+abline(h=0)
+plot(tot.perm, residSally)
+abline(h=0)
+plot(apart, residSally)
+abline(h=0)
+
+```
+
+okay so what is the significance of this? 
+
+
+This is one with some quadratic terms. In the quadratic model, the quadratic terms are significant..... but is it more significant than the non quadratic model?
+
+```{r}
+
+modelquad <- lm(num.trans ~ (ave.pri + tot.perm + apart)^2 + primeTime + season + ave.pri^2 + tot.perm^2 + apart^2)
+summary(modelquad)
+
+```
+
+The Durbin-Watson statistics give us: 
+
+```{r}
+library(lmtest)
+dw1 <- dwtest(num.trans ~ primeTime + season + int.rate + ave.pri + tot.perm + apart, alternative="two.sided")
+dw1
+dw2 <- dwtest(num.trans ~ primeTime + season + ave.pri + tot.perm + apart, alternative="two.sided")
+dw2
+
+```
+
+What is the significance of these values?
+
+Comment on leave-one-out cross validation:
+
+```{r}
+#Function to calculate the leave-one-out cross validation error.
+ls.cvrmse <- function(ls.out)
+{
+  res.cv <- ls.out$residuals / (1.0 - ls.diag(ls.out)$hat)
+  # Identify NA's and remove them.
+  is.na.res <- is.na(res.cv)
+  res.cv <- res.cv[!is.na.res]
+  cvrmse <- sqrt(sum(res.cv^2) / length(res.cv))
+  return(cvrmse)
+}
+
+fit2.cvrmse <- ls.cvrmse(fit2)
+fit2.cvrmse
+SallyModel.cvrmse <- ls.cvrmse(modelSally)
+SallyModel.cvrmse
+
+```
+
+How big or how small? is it reasonable given the scale of the data?
+
+Method of variable selection: Exhaustive method, forward and backward 
+
+Variable selection using forward and backward selection/residual plots used to decide on transform of variables. We first apply the forward selection,and from the table we get lowest cp is 0.08234 with 5 variables(HPI,tot.perm,seasonSummer,primetime,monthnum) and largest adjr is 0.86 from 7 variables(HPI,tot.perm,seasonSummer,primeTime,monthNum,int.rate,GIC). So we establish a model 
+modelLily<-lm(num.trans ~ HPI+tot.perm+season+primeTime+monthNum+int.rate+GIC). Since the predicted value versus residual plot reveals signs of heteroscedasticity, we log the response variable. In addition, plot of tot.perm versus residuals shows curvature, so we square the tot.perm term. The model after transformation increases the adj.$R^2$ to 0.8687.
+
+```{r}
+library(leaps)
+s1 <- regsubsets(num.trans~ detached + apart + tHouse + ave.pri + HPI + tot.perm + primeTime + season + monthNum + newHomes + int.rate + GIC + timeNumOrder, data = LSdata, method = "exhaustive")
+ss1 <- summary(s1)
+ss1
+ss1$cp
+
+diagnose=ls.diag(modelSally)
+summary(diagnose)
+
+```
+
+What was found to be interesting from the above?
+
+Lily's part:
+
+```{r}
+#cross-validation
+n = 34
+id.subset1 <- sort(sample(1:n, round(n/2), replace = FALSE))
+#subset1 is training and subset2 is holdout
+LSdata.subset1 <- LSdata[id.subset1,]
+LSdata.subset2 <- LSdata[-id.subset1,] 
+#fit2,making prediction at the holdout set
+model1.subset1<- lm(num.trans ~ primeTime + season + monthNum + int.rate + ave.pri + tot.perm + num.sold, data=LSdata.subset1)
+model1.pred1<-predict(model1.subset1,LSdata.subset2)
+model1.errr1<-sqrt(sum(LSdata.subset2$num.trans-model1.pred1)^2)/length(model1.pred1)
+model1.errr1 #Since the training/holdout set are chosen ramdomly,the error varies from 373.435 to 5284.471
+
+#model6(Lin),making prediction at the holdout set
+model6.subset1<-lm(log(num.trans)~HPI+I(tot.perm^2)+season+primeTime+monthNum+int.rate+GIC,data=LSdata.subset1)
+model6.pred1<-predict(model6.subset1,LSdata.subset2)
+model6.errr1<-sqrt(sum(LSdata.subset2$num.trans-model6.pred1)^2)/length(model6.pred1)
+model6.errr1
+
+```
+
+What was found to be interesting from the above?
+
+
+Randomly select half of the data as training set and the rest as holdout set. Do the regression using the training set and predict on the holdout set to get the RMSE. We summarize the comparisons of 3 models in the table.
+
+
+
